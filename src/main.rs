@@ -1,4 +1,5 @@
 mod filters;
+mod generate;
 mod misc;
 pub mod parser;
 pub mod presets;
@@ -330,6 +331,37 @@ pub fn main() -> Result<()> {
             parser.modify_grain_headers()?;
 
             info!("Done, wrote output file to {}", output.to_string_lossy());
+        }
+        Commands::Generate {
+            spec,
+            output,
+            overwrite,
+            reference,
+        } => {
+            if spec == output {
+                error!(
+                    "Spec and output paths are the same. This is probably a typo, because this \
+                     would overwrite your scene spec. Exiting."
+                );
+                return Ok(());
+            }
+
+            if output.exists()
+                && !overwrite
+                && !Confirm::new()
+                    .with_prompt(format!(
+                        "File {} exists. Overwrite?",
+                        output.to_string_lossy()
+                    ))
+                    .interact()?
+            {
+                warn!("Not overwriting existing file. Exiting.");
+                return Ok(());
+            }
+
+            let gen_spec = generate::load_spec(&spec)?;
+            let resolved = generate::resolve(gen_spec, reference.as_deref())?;
+            generate::write_table(&resolved, &output)?;
         }
         Commands::Presets => {
             println!("Built-in film grain presets (use with `apply --preset <NAME>`):\n");
@@ -913,6 +945,32 @@ pub enum Commands {
         /// Overwrite the output file without prompting.
         #[clap(long, short = 'y')]
         overwrite: bool,
+    },
+    /// Generate a multi-scene film-grain table (`.tbl`) from a JSON scene spec,
+    /// reusing av1-grain's canonical photon-noise physics (luma only, `ar_coeff_lag = 0`).
+    ///
+    /// Each scene carries its own ISO; segments are concatenated into one
+    /// `filmgrn1` table consumed by `grav1synth apply`. Pass `--reference` (the
+    /// zero-grain encoded file you will inject into) so that segment time
+    /// boundaries are derived from its actual packet PTSes — this makes
+    /// `generate` → `apply` produce byte-identical timestamps and the scene
+    /// switch land on the intended frame (VFR-safe). Width/height/transfer/
+    /// full_range are also filled from the reference when absent from the spec.
+    Generate {
+        /// Path to the JSON scene spec.
+        #[clap(value_parser)]
+        spec: PathBuf,
+        /// Path to write the film grain table (`.tbl`) to.
+        #[clap(long, short, value_parser)]
+        output: PathBuf,
+        /// Overwrite the output file without prompting.
+        #[clap(long, short = 'y')]
+        overwrite: bool,
+        /// Optional reference video: fills width/height/transfer/full_range when
+        /// absent from the spec AND derives exact per-frame segment boundaries
+        /// from its packet PTSes (recommended).
+        #[clap(long, value_parser)]
+        reference: Option<PathBuf>,
     },
     /// Generate a film grain table by diffing a source video against a denoised copy.
     ///

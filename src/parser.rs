@@ -42,6 +42,32 @@ pub struct BitstreamParser<const WRITE: bool> {
     grain_headers: Vec<FilmGrainHeader>,
 }
 
+/// Convert an FFmpeg packet PTS to the AV1 grain-table timestamp unit (100ns
+/// ticks = 1/10,000,000 of a second), using the stream's `time_base`.
+///
+/// This is the exact transform that `apply` uses to match grain-table segments
+/// against packets (see `parser/frame.rs`: `seg.start_time <= packet_ts <
+/// seg.end_time`). Exposing it at module scope lets `generate` derive segment
+/// boundaries from a reference file's packet PTSes so that the
+/// `generate` → `apply` pair produces byte-identical timestamps for the same
+/// packet (and is therefore immune to VFR / fps-rational rounding).
+pub(crate) fn pts_to_av1_ts(pts: i64, time_base: Rational) -> u64 {
+    if pts < 0 {
+        return 0;
+    }
+
+    let pts = pts as u64;
+    let num = time_base.0 as u64;
+    let den = time_base.1 as u64;
+    if den == 0 {
+        return 0;
+    }
+
+    // Use ceiling so timestamps line up with the 100ns packet boundaries that
+    // are emitted by `aggregate_grain_headers` when generating the grain table.
+    (pts * num * 10_000_000u64).div_ceil(den)
+}
+
 impl<const WRITE: bool> BitstreamParser<WRITE> {
     #[must_use]
     pub fn new(reader: BitstreamReader) -> Self {
@@ -101,20 +127,7 @@ impl<const WRITE: bool> BitstreamParser<WRITE> {
     }
 
     fn ffmpeg_pts_to_av1_ts(pts: i64, time_base: Rational) -> u64 {
-        if pts < 0 {
-            return 0;
-        }
-
-        let pts = pts as u64;
-        let num = time_base.0 as u64;
-        let den = time_base.1 as u64;
-        if den == 0 {
-            return 0;
-        }
-
-        // Use ceiling so timestamps line up with the 100ns packet boundaries that
-        // are emitted by `aggregate_grain_headers` when generating the grain table.
-        (pts * num * 10_000_000u64).div_ceil(den)
+        pts_to_av1_ts(pts, time_base)
     }
 
     /// Returns `true` if the `film_grain_params_present` flag is set in the stream's Sequence

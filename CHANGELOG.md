@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Add a new `generate` subcommand that builds a multi-scene film grain table from a JSON scene spec
+  using av1-grain's photon-noise model. With `--reference`, segment boundaries are derived from that
+  file's packet timestamps, so `generate` and `apply` agree exactly.
 - Support ffmpeg 9.0
 - Merge `apply` and `generate` into a single `apply` command. `--grain <FILE>` applies
   table-based grain; `--iso <NUM>` (with optional `--chroma`) applies photon-noise-based grain.

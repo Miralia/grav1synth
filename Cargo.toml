@@ -28,6 +28,8 @@ num-rational = "0.4.1"
 num-traits = "0.2.15"
 num_enum = "0.7"
 pretty_env_logger = "0.5.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 v_frame = "0.5.1"
 video-resize = "0.2.0"
 

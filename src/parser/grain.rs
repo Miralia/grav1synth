@@ -456,7 +456,7 @@ mod tests {
         assert!(params.scaling_points_cb.is_empty());
         assert!(params.scaling_points_cr.is_empty());
         assert_eq!(params.ar_coeff_lag, 0);
-        assert_eq!(params.ar_coeffs_y.as_slice(), &[]);
+        assert!(params.ar_coeffs_y.is_empty());
         assert_eq!(params.ar_coeffs_cb.as_slice(), &[0]);
         assert_eq!(params.ar_coeffs_cr.as_slice(), &[0]);
         assert_eq!(params.scaling_shift, 10);
@@ -625,7 +625,7 @@ mod tests {
         assert_eq!(params.scaling_points_cb.as_slice(), &[[30, 40]]);
         assert_eq!(params.scaling_points_cr.as_slice(), &[[50, 60]]);
         assert_eq!(params.ar_coeff_lag, 0);
-        assert_eq!(params.ar_coeffs_y.as_slice(), &[]);
+        assert!(params.ar_coeffs_y.is_empty());
         assert_eq!(params.ar_coeffs_cb.as_slice(), &[3]);
         assert_eq!(params.ar_coeffs_cr.as_slice(), &[-3]);
         assert_eq!(params.ar_coeff_shift, 8);
@@ -689,7 +689,7 @@ mod tests {
         assert_eq!(params.scaling_points_cb.as_slice(), &[[70, 80]]);
         assert_eq!(params.scaling_points_cr.as_slice(), &[[90, 100]]);
         assert_eq!(params.ar_coeff_lag, 1);
-        assert_eq!(params.ar_coeffs_y.as_slice(), &[]);
+        assert!(params.ar_coeffs_y.is_empty());
         assert_eq!(params.ar_coeffs_cb.as_slice(), &[10, 11, 12, 13]);
         assert_eq!(params.ar_coeffs_cr.as_slice(), &[-10, -11, -12, -13]);
         assert_eq!(params.ar_coeff_shift, 7);
